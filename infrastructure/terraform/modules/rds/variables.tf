@@ -14,3 +14,4 @@ variable "multi_az" { type = bool }
 variable "lambda_security_group_id" { type = string }
 variable "ecs_security_group_id" { type = string }
 variable "kms_key_arn" { type = string }
+

@@ -129,3 +129,4 @@ variable "github_repo_name" {
   type        = string
   default     = "graphql-serverless-architecture"
 }
+

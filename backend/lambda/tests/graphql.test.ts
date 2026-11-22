@@ -63,3 +63,4 @@ describe('Lambda GraphQL Schema and Resolvers', () => {
     assert.strictEqual(items[0].status, 'COMPLETED');
   });
 });
+

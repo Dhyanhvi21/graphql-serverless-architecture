@@ -224,3 +224,4 @@ resource "aws_security_group" "lambda" {
     Name = "${var.environment}-lambda-sg"
   }
 }
+

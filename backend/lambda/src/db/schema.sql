@@ -38,3 +38,4 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_items_status ON items(status);
 CREATE INDEX IF NOT EXISTS idx_items_assigned_to ON items(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_ws_connections_topic ON websocket_connections(topic);
+

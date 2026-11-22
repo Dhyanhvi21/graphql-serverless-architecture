@@ -107,3 +107,4 @@ custom:
     alarms:
       - ${self:provider.stage}-graphql-handler-errors
       - ${self:provider.stage}-graphql-handler-high-latency
+

@@ -78,3 +78,4 @@ export async function getDbPool(): Promise<Pool> {
 
   return poolInstance;
 }
+

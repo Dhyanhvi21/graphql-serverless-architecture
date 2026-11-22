@@ -16,3 +16,4 @@ ecs_desired_count     = 2
 alarm_email           = "devops-alerts@mycompany.com"
 github_repo_owner     = "my-organization"
 github_repo_name      = "graphql-serverless-architecture"
+

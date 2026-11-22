@@ -156,3 +156,4 @@ Outputs:
   GraphQLFunctionArn:
     Description: GraphQL Lambda Function ARN
     Value: !GetAtt GraphQLFunction.Arn
+

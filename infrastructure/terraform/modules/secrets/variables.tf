@@ -12,3 +12,4 @@ variable "db_username" {
   type        = string
   description = "Database username"
 }
+

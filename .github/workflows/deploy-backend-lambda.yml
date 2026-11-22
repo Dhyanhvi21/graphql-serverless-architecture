@@ -69,3 +69,4 @@ jobs:
           cd backend/lambda
           npx serverless rollback --stage prod || true
           echo "✅ Rollback executed."
+

@@ -30,3 +30,4 @@ describe('ECS Fargate Private GraphQL Server Schema', () => {
     assert.strictEqual(response.data?.healthCheck, 'Private ECS GraphQL Server active.');
   });
 });
+

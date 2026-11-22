@@ -79,3 +79,4 @@ export async function closeDbPool(): Promise<void> {
     poolInstance = null;
   }
 }
+

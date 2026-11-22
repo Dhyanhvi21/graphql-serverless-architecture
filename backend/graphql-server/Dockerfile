@@ -50,3 +50,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 
 # Start Apollo GraphQL server
 CMD ["node", "dist/server.js"]
+

@@ -57,3 +57,4 @@ output "sns_alert_topic_arn" {
   description = "SNS topic ARN for CloudWatch alarm alerts"
   value       = module.cloudwatch.sns_topic_arn
 }
+

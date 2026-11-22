@@ -30,3 +30,4 @@ export async function runMigrations() {
 if (process.argv[1] === __filename) {
   runMigrations().then(() => process.exit(0)).catch(() => process.exit(1));
 }
+

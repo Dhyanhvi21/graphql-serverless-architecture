@@ -80,3 +80,4 @@ jobs:
           aws ecs describe-services \
             --cluster ${{ secrets.ECS_CLUSTER_NAME || 'prod-graphql-cluster' }} \
             --services ${{ secrets.ECS_SERVICE_NAME || 'prod-graphql-service' }}
+

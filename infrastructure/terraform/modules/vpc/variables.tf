@@ -27,3 +27,4 @@ variable "private_db_subnets" {
   type        = list(string)
   description = "Private database subnet CIDRs"
 }
+
