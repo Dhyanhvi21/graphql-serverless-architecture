@@ -79,7 +79,28 @@ flowchart TB
 
 ---
 
-## Key Design & Engineering Decisions
+## Live Application Previews
+
+### 1. Operations Platform Console
+The React single-page application hosted on S3 and delivered globally through CloudFront with Origin Access Control (OAC):
+
+![Operations Console](assets/screenshots/dashboard-preview.svg)
+
+---
+
+### 2. GraphQL Query & Mutation Explorer
+Interactive GraphQL operations running against the serverless backend and PostgreSQL database:
+
+![GraphQL Explorer](assets/screenshots/graphql-explorer.svg)
+
+---
+
+### 3. Container & Database Health Check
+Live health probe endpoint (`/health`) validating database connectivity and uptime for the internal ALB and ECS task monitoring:
+
+![Health Check](assets/screenshots/health-check.svg)
+
+---
 
 1. **Frontend Hosting (S3 + CloudFront OAC)**
    - Instead of legacy S3 website endpoints or deprecated Origin Access Identity (OAI), we use **CloudFront Origin Access Control (OAC)** with AWS SigV4 request signing. S3 public access is completely blocked (`BlockPublicAcls`, `BlockPublicPolicy`).

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="100%" height="100%">
+  <style>
+    .font-sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  </style>
+
+  <!-- Window Frame -->
+  <rect width="900" height="480" rx="10" fill="#1e293b"/>
+  <!-- Window Header / Title Bar -->
+  <path d="M 0 10 C 0 4.47 4.47 0 10 0 L 890 0 C 895.53 0 900 4.47 900 10 L 900 36 L 0 36 Z" fill="#0f172a"/>
+  <circle cx="18" cy="18" r="5" fill="#ef4444"/>
+  <circle cx="34" cy="18" r="5" fill="#f59e0b"/>
+  <circle cx="50" cy="18" r="5" fill="#10b981"/>
+  <rect x="200" y="7" width="500" height="22" rx="5" fill="#1e293b"/>
+  <text x="450" y="22" fill="#94a3b8" font-size="11" text-anchor="middle" class="mono">http://localhost:4000/health</text>
+
+  <!-- Body -->
+  <rect x="0" y="36" width="900" height="444" fill="#0b1120"/>
+
+  <rect x="24" y="56" width="852" height="400" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+  
+  <!-- Formatted JSON View -->
+  <text x="50" y="90" fill="#94a3b8" font-size="13" class="mono">{</text>
+  <text x="75" y="120" fill="#a78bfa" font-size="13" class="mono">"status": <tspan fill="#34d399">"UP"</tspan>,</text>
+  <text x="75" y="150" fill="#a78bfa" font-size="13" class="mono">"timestamp": <tspan fill="#38bdf8">"2026-11-22T17:05:00.000Z"</tspan>,</text>
+  <text x="75" y="180" fill="#a78bfa" font-size="13" class="mono">"uptimeSeconds": <tspan fill="#f59e0b">1420</tspan>,</text>
+  <text x="75" y="210" fill="#a78bfa" font-size="13" class="mono">"database": <tspan fill="#34d399">"CONNECTED"</tspan>,</text>
+  <text x="75" y="240" fill="#a78bfa" font-size="13" class="mono">"engine": <tspan fill="#38bdf8">"PostgreSQL 15 (RDS Multi-AZ)"</tspan>,</text>
+  <text x="75" y="270" fill="#a78bfa" font-size="13" class="mono">"architecture": {</text>
+  <text x="100" y="300" fill="#a78bfa" font-size="13" class="mono">"frontend": <tspan fill="#34d399">"React 18 + S3 + CloudFront (OAC)"</tspan>,</text>
+  <text x="100" y="330" fill="#a78bfa" font-size="13" class="mono">"backend": <tspan fill="#34d399">"AWS Lambda + ECS Fargate Private Server"</tspan>,</text>
+  <text x="100" y="360" fill="#a78bfa" font-size="13" class="mono">"database": <tspan fill="#34d399">"AWS RDS PostgreSQL (Private Subnets)"</tspan>,</text>
+  <text x="100" y="390" fill="#a78bfa" font-size="13" class="mono">"monitoring": <tspan fill="#34d399">"CloudWatch Alarms (SNS Alerts Enabled)"</tspan></text>
+  <text x="75" y="420" fill="#94a3b8" font-size="13" class="mono">}</text>
+  <text x="50" y="445" fill="#94a3b8" font-size="13" class="mono">}</text>
+</svg>
