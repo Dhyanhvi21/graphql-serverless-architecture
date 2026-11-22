@@ -1,0 +1,16 @@
+variable "environment" { type = string }
+variable "vpc_id" { type = string }
+variable "private_subnet_ids" { type = list(string) }
+variable "public_subnet_ids" { type = list(string) }
+variable "ecs_security_group_id" { type = string }
+variable "alb_security_group_id" { type = string }
+variable "task_execution_role_arn" { type = string }
+variable "task_role_arn" { type = string }
+variable "container_image" { type = string }
+variable "container_port" { type = number }
+variable "cpu" { type = number }
+variable "memory" { type = number }
+variable "desired_count" { type = number }
+variable "db_secret_arn" { type = string }
+variable "db_host" { type = string }
+variable "db_name" { type = string }

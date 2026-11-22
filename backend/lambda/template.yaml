@@ -1,0 +1,158 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AWS SAM Template for Serverless GraphQL Architecture with RDS Integration.
+  Configures Lambda functions, API Gateway, VPC integration, Auto Scaling, and Canary Rollback.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, staging, prod]
+  DbSecretArn:
+    Type: String
+    Description: ARN of the Secrets Manager DB secret
+    Default: arn:aws:secretsmanager:us-east-1:123456789012:secret:prod/rds/postgresql/credentials
+  DbHost:
+    Type: String
+    Description: RDS endpoint address
+    Default: localhost
+  LambdaSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security Group for Lambda functions
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet::Id
+    Description: Private subnet 1 ID
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet::Id
+    Description: Private subnet 2 ID
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 512
+    Runtime: nodejs20.x
+    Architectures:
+      - arm64
+    VpcConfig:
+      SecurityGroupIds:
+        - !Ref LambdaSecurityGroupId
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Environment
+        DB_SECRET_ARN: !Ref DbSecretArn
+        DB_HOST: !Ref DbHost
+    AutoPublishAlias: live
+    DeploymentPreference:
+      Type: Canary10Percent5Minutes
+      Alarms:
+        - !Ref LambdaErrorAlarm
+
+Resources:
+  # HTTP API Gateway for GraphQL and REST Endpoints
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowOrigins:
+          - '*'
+
+  # Core GraphQL Handler Function
+  GraphQLFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: dist/handlers/graphql.handler
+      Description: Core GraphQL query & mutation executor
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref DbSecretArn
+        - Statement:
+            - Effect: Allow
+              Action:
+                - kms:Decrypt
+                - cloudwatch:PutMetricData
+              Resource: '*'
+      Events:
+        GraphQLPost:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /graphql
+            Method: POST
+        GraphQLGet:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /graphql
+            Method: GET
+
+  # Read-optimized Query Handler Function
+  QueryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: dist/handlers/queries.handler
+      Description: Read Query Resolver
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref DbSecretArn
+      Events:
+        GetItems:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /api/items
+            Method: GET
+
+  # Transactional Mutation Handler Function
+  MutationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: dist/handlers/mutations.handler
+      Description: Transactional Write Resolver
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref DbSecretArn
+      Events:
+        MutateItem:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /api/mutate
+            Method: POST
+
+  # CloudWatch Alarm for Automated Canary Rollback
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Rollback deployment if GraphQL function errors exceed threshold
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref GraphQLFunction
+
+Outputs:
+  HttpApiEndpoint:
+    Description: HTTP API Gateway endpoint URL
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  GraphQLFunctionArn:
+    Description: GraphQL Lambda Function ARN
+    Value: !GetAtt GraphQLFunction.Arn

@@ -1,0 +1,109 @@
+service: serverless-graphql-backend
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'prod'}
+  memorySize: 512
+  timeout: 10
+  architecture: arm64 # Cost-optimized AWS Graviton2
+
+  environment:
+    NODE_ENV: ${self:provider.stage}
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
+    DB_SECRET_ARN: ${param:dbSecretArn, 'arn:aws:secretsmanager:us-east-1:123456789012:secret:prod/rds/postgresql/credentials'}
+    DB_HOST: ${param:dbHost, 'localhost'}
+
+  vpc:
+    securityGroupIds:
+      - ${param:lambdaSecurityGroupId, 'sg-0123456789abcdef0'}
+    subnetIds:
+      - ${param:privateSubnet1, 'subnet-0123456789abcdef1'}
+      - ${param:privateSubnet2, 'subnet-0123456789abcdef2'}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+          Resource:
+            - ${self:provider.environment.DB_SECRET_ARN}
+        - Effect: Allow
+          Action:
+            - kms:Decrypt
+          Resource: '*'
+        - Effect: Allow
+          Action:
+            - execute-api:ManageConnections
+          Resource: 'arn:aws:execute-api:*:*:**/@connections/*'
+        - Effect: Allow
+          Action:
+            - cloudwatch:PutMetricData
+          Resource: '*'
+
+package:
+  individually: true
+  patterns:
+    - '!node_modules/**'
+    - '!src/**'
+    - '!tests/**'
+    - 'dist/**'
+
+functions:
+  graphqlHandler:
+    handler: dist/handlers/graphql.handler
+    description: Core GraphQL operations resolver (Queries and Mutations)
+    events:
+      - http:
+          path: /graphql
+          method: post
+          cors: true
+      - http:
+          path: /graphql
+          method: get
+          cors: true
+
+  queryHandler:
+    handler: dist/handlers/queries.handler
+    description: Read-heavy query resolver with caching
+    events:
+      - http:
+          path: /api/items
+          method: get
+          cors: true
+
+  mutationHandler:
+    handler: dist/handlers/mutations.handler
+    description: Transactional mutation handler for RDS
+    events:
+      - http:
+          path: /api/mutate
+          method: post
+          cors: true
+
+  subscriptionHandler:
+    handler: dist/handlers/subscriptions.handler
+    description: WebSocket subscription handler for real-time GraphQL events
+    events:
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $disconnect
+      - websocket:
+          route: subscribe
+      - websocket:
+          route: broadcast
+
+plugins:
+  - serverless-plugin-canary-deployments # Automated canary deployment with rollback on alarm
+
+custom:
+  deploymentSettings:
+    type: Canary10Percent5Minutes
+    alias: Live
+    alarms:
+      - ${self:provider.stage}-graphql-handler-errors
+      - ${self:provider.stage}-graphql-handler-high-latency

@@ -1,0 +1,91 @@
+name: Deploy React Frontend to S3 and CloudFront
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write # Required for AWS OIDC authentication
+  contents: read
+
+jobs:
+  deploy-frontend:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC Keyless)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package.json
+
+      - name: Install dependencies & Build
+        env:
+          VITE_GRAPHQL_URL: ${{ secrets.GRAPHQL_API_URL }}
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Backup current S3 production build (Rollback Prep)
+        id: backup
+        run: |
+          TIMESTAMP=$(date +%s)
+          echo "backup_folder=s3://${{ secrets.S3_FRONTEND_BUCKET }}/backups/$TIMESTAMP" >> $GITHUB_OUTPUT
+          aws s3 sync s3://${{ secrets.S3_FRONTEND_BUCKET }} s3://${{ secrets.S3_FRONTEND_BUCKET }}/backups/$TIMESTAMP --exclude "backups/*" || true
+
+      - name: Sync Static Assets to S3 (Hashed assets 1yr cache)
+        run: |
+          cd frontend/dist
+          # Deploy assets with immutable cache
+          aws s3 sync assets/ s3://${{ secrets.S3_FRONTEND_BUCKET }}/assets/ \
+            --cache-control "public, max-age=31536000, immutable" \
+            --delete
+
+          # Deploy HTML and other files with no-cache to guarantee instant updates
+          aws s3 sync . s3://${{ secrets.S3_FRONTEND_BUCKET }}/ \
+            --exclude "assets/*" \
+            --cache-control "public, max-age=0, must-revalidate" \
+            --delete
+
+      - name: Invalidate CloudFront Distribution Cache
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" \
+            --query 'Invalidation.Id' --output text)
+          echo "Created CloudFront invalidation: $INVALIDATION_ID"
+
+      - name: Smoke Test Deployed Frontend
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.CLOUDFRONT_DOMAIN_NAME }}/index.html)
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Smoke test failed! Status code: $HTTP_STATUS"
+            exit 1
+          fi
+          echo "Frontend smoke test passed with HTTP 200"
+
+      - name: Automated Rollback on Deployment Failure
+        if: failure()
+        run: |
+          echo "🚨 Deployment failed! Initiating automated rollback to previous release..."
+          BACKUP_PATH="${{ steps.backup.outputs.backup_folder }}"
+          if [ -n "$BACKUP_PATH" ]; then
+            aws s3 sync $BACKUP_PATH s3://${{ secrets.S3_FRONTEND_BUCKET }}/ --delete
+            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+            echo "✅ Successfully rolled back frontend to previous stable version."
+          fi

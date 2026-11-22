@@ -1,0 +1,98 @@
+name: CI Quality Gate
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches-ignore: [main, master]
+
+jobs:
+  test-frontend:
+    name: Frontend Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Typecheck and Build
+        run: |
+          cd frontend
+          npm run build
+
+  test-lambda:
+    name: Lambda Backend Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/lambda/package.json
+
+      - name: Install dependencies
+        run: |
+          cd backend/lambda
+          npm ci
+
+      - name: Compile TypeScript
+        run: |
+          cd backend/lambda
+          npm run build
+
+  test-ecs-server:
+    name: ECS GraphQL Server Build & Docker Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/graphql-server/package.json
+
+      - name: Install dependencies & Build
+        run: |
+          cd backend/graphql-server
+          npm ci
+          npm run build
+
+      - name: Validate Dockerfile build
+        run: |
+          cd backend/graphql-server
+          docker build -t graphql-server-test:ci .
+
+  terraform-lint:
+    name: Terraform Format & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: Check Terraform formatting
+        run: |
+          cd infrastructure/terraform
+          terraform fmt -check -recursive

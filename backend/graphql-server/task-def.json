@@ -1,0 +1,48 @@
+{
+  "family": "prod-graphql-server",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::123456789012:role/prod-ecs-task-execution-role",
+  "taskRoleArn": "arn:aws:iam::123456789012:role/prod-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "graphql-server",
+      "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/graphql-server:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 4000,
+          "hostPort": 4000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "4000" }
+      ],
+      "secrets": [
+        {
+          "name": "DB_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:123456789012:secret:prod/rds/postgresql/credentials"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/prod-graphql-server",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
+      }
+    }
+  ]
+}
